@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wnm-sharepoint-client"
+version = "0.1.0"
+description = "Client for interacting with SharePoint via Microsoft Graph API."
+authors = [
+    { name = "Matt Mallory", email = "matt.mallory@alleninstitute.org" }
+]
+dependencies = [
+    "pandas",
+    "requests",
+    "openpyxl",
+    "pytest",
+    "dotenv"
+]
+requires-python = ">=3.7"
+
+
+[tool.setuptools.packages.find]
+where = ["."]  
+
+[tool.setuptools.package-data]
+"wnm_sharepoint_client" = ["*"]
+
+[project.urls]
+Homepage = "https://github.com/AllenInstitute/wnm_sharepoint_client"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+testpaths = ["tests"]
