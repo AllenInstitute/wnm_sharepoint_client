@@ -3,6 +3,9 @@ from io import BytesIO, StringIO
 from pathlib import Path
 import pandas as pd
 import requests
+import psutil
+from .logger import logger 
+from typing import Optional
 
 from .auth import token_manager
 from .config import SITE_ID, DRIVE_ID
@@ -70,6 +73,8 @@ class SharePointClient:
             return pd.read_excel(BytesIO(r.content))
         elif file_name.endswith(".csv"):
             return pd.read_csv(BytesIO(r.content))
+        else:
+            raise ValueError(f"Unsupported file type for spreadsheet: {file_name}")
 
     def read_json(self, folder_path: str, file_name: str) -> dict:
         """
@@ -187,3 +192,127 @@ class SharePointClient:
         response.raise_for_status()
         with open(output_path, "wb") as f:
             f.write(response.content)
+
+    def create_folder(self, parent_path: str, new_folder_name: str) -> dict:
+        """
+        Create a new folder in SharePoint.
+
+        :param parent_path: Path to the parent folder (relative to the 'General' folder).
+        :param new_folder_name: Name of the folder to create.
+        :return: Response metadata from SharePoint.
+        """
+        url = self._build_url(f"General/{parent_path}:/children")
+        headers = token_manager.get_headers()
+        headers["Content-Type"] = "application/json"
+
+        payload = {
+            "name": new_folder_name,
+            "folder": {},
+            "@microsoft.graph.conflictBehavior": "fail"  
+        }
+
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+
+    def move_file(
+        self,
+        source_folder: str,
+        file_name: str,
+        dest_folder: str,
+        new_file_name: Optional[str] = None
+    ) -> dict:
+        """
+        Safely move a file from one folder to another, optionally renaming it:
+        - Downloads file content into memory first.
+        - Moves the file via Graph API.
+        - If move fails, restores original file from memory.
+
+        :param source_folder: Current folder path relative to 'General'.
+        :param file_name: Name of the file to move.
+        :param dest_folder: Destination folder path relative to 'General'.
+        :param new_file_name: Optional new name for the file at the destination.
+        :return: Metadata of the moved file.
+        """
+        headers = token_manager.get_headers()
+        headers["Content-Type"] = "application/json"
+
+        dest_file_name = new_file_name or file_name
+
+        # Build paths
+        src_path = f"General/{source_folder}/{file_name}"
+        dest_path = f"General/{dest_folder}/{dest_file_name}"
+
+        file_bytes = None  # safeguard in case download fails
+
+        try:
+            # Step 1: Get file metadata
+            meta = self.get_document(source_folder, file_name)
+            item_id = meta["id"]
+            download_url = meta["@microsoft.graph.downloadUrl"]
+
+            logger.info(f"[SAFE_MOVE_FILE] Preparing to move file '{file_name}' from '{source_folder}' to '{dest_folder}' as '{dest_file_name}'")
+
+            # Step 2: Download content into memory and check size
+            file_response = requests.get(download_url)
+            file_response.raise_for_status()
+            file_bytes = file_response.content
+
+            max_safe_size = get_dynamic_max_safe_size()
+            if len(file_bytes) > max_safe_size:
+                raise MemoryError(
+                    f"[SAFE_MOVE_FILE] File too large to safely move in memory "
+                    f"({len(file_bytes)} bytes > {max_safe_size} bytes)"
+                )
+
+            # Step 3: Check for conflict at destination
+            dest_check = requests.get(self._build_url(dest_path), headers=headers)
+            if dest_check.status_code == 200:
+                raise Exception(f"[SAFE_MOVE_FILE] Conflict: '{dest_file_name}' already exists at destination '{dest_folder}'.")
+
+            # Step 4: Get destination folder's item ID
+            dest_folder_meta = requests.get(self._build_url(f"General/{dest_folder}"), headers=headers)
+            dest_folder_meta.raise_for_status()
+            parent_id = dest_folder_meta.json()["id"]
+
+            # Step 5: Try to move and rename the file via PATCH
+            patch_url = f"https://graph.microsoft.com/v1.0/sites/{self.site_id}/drives/{self.drive_id}/items/{item_id}"
+            payload = {
+                "parentReference": {"id": parent_id},
+                "name": dest_file_name
+            }
+
+            move_response = requests.patch(patch_url, headers=headers, json=payload)
+            move_response.raise_for_status()
+
+            logger.info(f"[SAFE_MOVE_FILE] Successfully moved '{file_name}' to '{dest_folder}/{dest_file_name}'")
+            return move_response.json()
+
+        except Exception as e:
+            logger.error(f"[SAFE_MOVE_FILE] Move failed for '{file_name}': {e}")
+
+            # Step 6: Attempt recovery only if file was downloaded
+            if file_bytes:
+                try:
+                    recovery_url = self._build_url(src_path + ":/content")
+                    recovery_headers = token_manager.get_headers()
+                    recovery_headers["Content-Type"] = "application/octet-stream"
+                    recovery_response = requests.put(recovery_url, headers=recovery_headers, data=file_bytes)
+                    recovery_response.raise_for_status()
+
+                    logger.warning(f"[SAFE_MOVE_FILE] Recovered original file '{file_name}' to '{source_folder}'")
+                except Exception as recover_err:
+                    logger.critical(f"[SAFE_MOVE_FILE] Failed to recover original file '{file_name}': {recover_err}")
+                    raise
+            else:
+                logger.warning(f"[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore.")
+
+            raise
+
+def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
+    """
+    Returns a dynamic max safe size in bytes, based on a fraction of available memory.
+    """
+    available_bytes = psutil.virtual_memory().available
+    return int(available_bytes * fraction)

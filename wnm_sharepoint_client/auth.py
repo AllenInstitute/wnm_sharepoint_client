@@ -2,6 +2,7 @@ import time
 import threading
 import requests
 from .config import TENANT_ID, CLIENT_ID, CLIENT_SECRET, SCOPE
+from .logger import logger
 
 class SingletonMeta(type):
     _instances = {}
@@ -27,7 +28,7 @@ class TokenManager(metaclass=SingletonMeta):
             return self.token
 
     def refresh_token(self):
-        print("Refreshing token...")
+        logger.info("Refreshing token...")
         token_url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
         data = {
             "grant_type": "client_credentials",
