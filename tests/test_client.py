@@ -3,6 +3,8 @@ import pytest
 import pandas as pd
 from datetime import datetime
 import requests
+import os
+
 from wnm_sharepoint_client.client import SharePointClient
 from wnm_sharepoint_client.auth import token_manager
 
@@ -95,4 +97,14 @@ def test_token_refresh_logic(monkeypatch):
 
     new_token = tm.get_token()
     assert new_token == "new-token"
+    
+def test_upload_and_download_file(client, tmp_path):
+    file_name = "test_csv.csv"
+    downloaded_path = tmp_path / "downloaded.csv"
+    client.download_file(folder_path=FOLDER, file_name=file_name, output_path=str(downloaded_path))
+
+    downloaded_df = client.read_spreadsheet(FOLDER, file_name)
+    local_df = pd.read_csv(downloaded_path)
+    os.remove(downloaded_path)
+    pd.testing.assert_frame_equal(downloaded_df, local_df)
     

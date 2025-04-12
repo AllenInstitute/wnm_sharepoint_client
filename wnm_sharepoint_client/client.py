@@ -180,19 +180,23 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
-    def download_file(self, item_id: str, output_path: str):
+    def download_file(self, folder_path: str, file_name: str, output_path: str):
         """
-        Download a file by item ID from SharePoint to a local path.
+        Download a file from SharePoint to a local path using its folder and file name.
 
-        :param item_id: SharePoint item ID.
-        :param output_path: Path to save the downloaded file.
+        :param folder_path: Folder path relative to 'General'.
+        :param file_name: File name to download.
+        :param output_path: Path to save the downloaded file locally.
         """
-        url = f"https://graph.microsoft.com/v1.0/sites/{self.site_id}/drives/{self.drive_id}/items/{item_id}/content"
+        meta = self.get_document(folder_path, file_name)
+        url = meta["@microsoft.graph.downloadUrl"]
+
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
+
         with open(output_path, "wb") as f:
             f.write(response.content)
-
+            
     def create_folder(self, parent_path: str, new_folder_name: str) -> dict:
         """
         Create a new folder in SharePoint.

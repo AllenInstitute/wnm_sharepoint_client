@@ -9,8 +9,8 @@ A simple Python client for interacting with the Horta Microsoft SharePoint via t
 -  List items in a SharePoint folder  
 -  Read and upload CSV, Excel (.xlsx), JSON, and SWC files  
 -  Upload any local file to SharePoint  
-- Download files by item ID  
-- Automatically handles authentication via a singleton `TokenManager`  
+-  Download files by file name  
+-  Automatically handles authentication via a singleton `TokenManager`  
 
 ---
 
@@ -93,7 +93,7 @@ client = SharePointClient()
 ### List files in a folder
 
 ```python
-items = client.list_items("SomeFolder/Subfolder/")
+items = client.list_items("AIBS Completed SWC Files/wnm_sharepoint_client_CICD")
 print(items)
 ```
 
@@ -102,7 +102,7 @@ print(items)
 ### Read a spreadsheet
 
 ```python
-df = client.read_spreadsheet("Data", "example.xlsx")
+df = client.read_spreadsheet("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "example.xlsx")
 print(df.head())
 ```
 
@@ -111,16 +111,16 @@ print(df.head())
 ### Read a JSON file
 
 ```python
-data = client.read_json("Configs", "settings.json")
+data = client.read_json("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "settings.json")
 print(data)
 ```
 
 ---
 
-### Read an SWC file (neuron morphology)
+### Read an SWC file to a dataframe
 
 ```python
-df = client.read_swc("Morphologies", "cell_001.swc")
+df = client.read_swc("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "cell_001.swc")
 print(df.head())
 ```
 
