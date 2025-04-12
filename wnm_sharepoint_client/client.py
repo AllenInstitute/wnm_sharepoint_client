@@ -313,6 +313,20 @@ class SharePointClient:
                 logger.warning(f"[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore.")
 
             raise
+        
+    def list_drives(self) -> list:
+        """
+        List all drives (document libraries) available under the site.
+
+        :return: List of drives with metadata (id, name, etc.).
+        """
+        url = f"https://graph.microsoft.com/v1.0/sites/{self.site_id}/drives"
+        response = requests.get(url, headers=token_manager.get_headers())
+        response.raise_for_status()
+        drives = response.json()['value']
+        logger.info(f"[DISCOVERY] Found {len(drives)} drives.")
+        return drives
+    
 
 def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
     """
