@@ -1,8 +1,11 @@
-import time
 import threading
+import time
+
 import requests
-from .config import TENANT_ID, CLIENT_ID, CLIENT_SECRET, SCOPE
+
+from .config import CLIENT_ID, CLIENT_SECRET, SCOPE, TENANT_ID
 from .logger import logger
+
 
 class SingletonMeta(type):
     _instances = {}
@@ -15,10 +18,11 @@ class SingletonMeta(type):
                 cls._instances[cls] = instance
         return cls._instances[cls]
 
+
 class TokenManager(metaclass=SingletonMeta):
     def __init__(self):
         self.token = None
-        self.expiry = 0  
+        self.expiry = 0
         self._lock = threading.Lock()
 
     def get_token(self) -> str:
@@ -40,12 +44,15 @@ class TokenManager(metaclass=SingletonMeta):
         response.raise_for_status()
         token_data = response.json()
         self.token = token_data["access_token"]
-        self.expiry = time.time() + int(token_data.get("expires_in", 3600)) - 60  # Refresh 1 min before expiry
+        self.expiry = (
+            time.time() + int(token_data.get("expires_in", 3600)) - 60
+        )  # Refresh 1 min before expiry
 
     def get_headers(self) -> dict:
         return {
             "Authorization": f"Bearer {self.get_token()}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
+
 
 token_manager = TokenManager()

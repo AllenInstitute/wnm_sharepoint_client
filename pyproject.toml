@@ -14,9 +14,15 @@ dependencies = [
     "requests",
     "openpyxl",
     "pytest",
-    "dotenv"
+    "dotenv",   
+    "black",
+    "flake8",
+    "isort"
 ]
 requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = ["black", "isort", "flake8", "autoflake", "pre-commit"]
 
 
 [tool.setuptools.packages.find]
@@ -24,6 +30,18 @@ where = ["."]
 
 [tool.setuptools.package-data]
 "wnm_sharepoint_client" = ["*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["ALL"]  # or be more specific like ["E", "F", "I"] if you want less strictness
+ignore = ["D", "ANN"]  # optionally ignore docstring or type hinting rules
+
+[tool.ruff.format]
+quote-style = "double"  # or "single" if you prefer
+
 
 [project.urls]
 Homepage = "https://github.com/AllenInstitute/wnm_sharepoint_client"

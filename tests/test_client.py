@@ -1,44 +1,46 @@
-import time
-import pytest
-import pandas as pd
-from datetime import datetime
-import requests
 import os
+import time
+from datetime import datetime
 
-from wnm_sharepoint_client.client import SharePointClient
+import pandas as pd
+import pytest
+import requests
+
 from wnm_sharepoint_client.auth import token_manager
+from wnm_sharepoint_client.client import SharePointClient
 
 FOLDER = "AIBS Completed SWC Files/wnm_sharepoint_client_CICD"
-EXPECTED_TEST_FILES = [
-    "test_json.json",
-    "test_csv.csv"
-]
+EXPECTED_TEST_FILES = ["test_json.json", "test_csv.csv"]
+
 
 @pytest.fixture(scope="module")
 def client():
     return SharePointClient()
 
+
 def test_upload_and_read_json(client):
     current_time = datetime.now().isoformat()
-    test_data = {'test_time': current_time}
+    test_data = {"test_time": current_time}
     file_name = "test_json.json"
 
     client.upload_json(test_data, FOLDER, file_name)
     downloaded = client.read_json(FOLDER, file_name)
 
-    assert 'test_time' in downloaded
-    assert downloaded['test_time'] == current_time
+    assert "test_time" in downloaded
+    assert downloaded["test_time"] == current_time
+
 
 def test_upload_and_read_csv(client):
     current_time = datetime.now().isoformat()
-    df = pd.DataFrame([{'test_time': current_time}])
+    df = pd.DataFrame([{"test_time": current_time}])
     file_name = "test_csv.csv"
 
     client.upload_csv(df, FOLDER, file_name)
     downloaded = client.read_spreadsheet(FOLDER, file_name)
 
-    assert 'test_time' in downloaded.columns
-    assert downloaded['test_time'].iloc[0] == current_time
+    assert "test_time" in downloaded.columns
+    assert downloaded["test_time"].iloc[0] == current_time
+
 
 def test_move_file(client):
     file_name = "test_csv.csv"
@@ -67,44 +69,56 @@ def test_move_file(client):
 
     # Move it back
     result = client.move_file(FOLDER, moved_file_name, FOLDER, file_name)
-    
+
+
 def test_list_files(client):
     listed_files = client.list_items(FOLDER)
     assert set(EXPECTED_TEST_FILES) == set(listed_files)
-    
+
+
 def test_read_spreadsheet_invalid_file_type(client):
     file_name = "test_json.json"
     with pytest.raises(Exception):
         client.read_spreadsheet(FOLDER, file_name)
-        
+
+
 def test_token_refresh_logic(monkeypatch):
     from wnm_sharepoint_client.auth import TokenManager
 
     tm = TokenManager()
-    old_token = tm.token
-
     # Expire the token
     tm.expiry = time.time() - 1
 
     # Force refresh
-    monkeypatch.setattr("requests.post", lambda *a, **kw: type("MockResp", (), {
-        "raise_for_status": lambda self: None,
-        "json": lambda self: {
-            "access_token": "new-token",
-            "expires_in": 3600
-        }
-    })())
+    monkeypatch.setattr(
+        "requests.post",
+        lambda *a, **kw: type(
+            "MockResp",
+            (),
+            {
+                "raise_for_status": lambda self: None,
+                "json": lambda self: {
+                    "access_token": "new-token",
+                    "expires_in": 3600,
+                },
+            },
+        )(),
+    )
 
     new_token = tm.get_token()
     assert new_token == "new-token"
-    
+
+
 def test_upload_and_download_file(client, tmp_path):
     file_name = "test_csv.csv"
     downloaded_path = tmp_path / "downloaded.csv"
-    client.download_file(folder_path=FOLDER, file_name=file_name, output_path=str(downloaded_path))
+    client.download_file(
+        folder_path=FOLDER,
+        file_name=file_name,
+        output_path=str(downloaded_path),
+    )
 
     downloaded_df = client.read_spreadsheet(FOLDER, file_name)
     local_df = pd.read_csv(downloaded_path)
     os.remove(downloaded_path)
     pd.testing.assert_frame_equal(downloaded_df, local_df)
-    
