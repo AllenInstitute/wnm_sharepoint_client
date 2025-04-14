@@ -19,7 +19,9 @@ A simple Python client for interacting with the Horta Microsoft SharePoint via t
 Install:
 
 ```bash
-coming soon
+git clone https://github.com/AllenInstitute/wnm_sharepoint_client.git  
+cd wnm_sharepoint_client    
+pip install .  
 ```
 
 ---
@@ -154,7 +156,21 @@ client.upload_file("local/path/to/file.txt", folder="GeneralDocs")
 
 ---
 
+### Move a file 
 
+```python
+client.move_file(source_folder="AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
+file_name = "sourcefile.txt", dest_folder = "AIBS Completed SWC Files/wnm_sharepoint_client_CICD", new_file_name = "movedfile.txt")
+```
+
+---
+
+### Move a file 
+
+```python
+client.create_folder(parent_path="AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
+new_folder_name = "SomeSubFolder")
+``````
 ---
 
 ##  Notes
@@ -174,8 +190,6 @@ client.upload_file("local/path/to/file.txt", folder="GeneralDocs")
 
 ##  Coming Soon
 
-- Ability to make dirs and move files
-- Automatic drive/folder discovery  
 - Optional caching layer for metadata  
 
 ---
