@@ -64,9 +64,7 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
-    def read_spreadsheet(
-        self, folder_path: str, file_name: str
-    ) -> pd.DataFrame:
+    def read_spreadsheet(self, folder_path: str, file_name: str) -> pd.DataFrame:
         """
         Download and read an Excel or CSV file into a pandas DataFrame.
 
@@ -133,9 +131,7 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
-    def upload_csv(
-        self, df: pd.DataFrame, folder: str, file_name: str
-    ) -> dict:
+    def upload_csv(self, df: pd.DataFrame, folder: str, file_name: str) -> dict:
         """
         Upload a pandas DataFrame as a CSV to SharePoint.
 
@@ -154,9 +150,7 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
-    def upload_swc(
-        self, df: pd.DataFrame, folder: str, file_name: str
-    ) -> dict:
+    def upload_swc(self, df: pd.DataFrame, folder: str, file_name: str) -> dict:
         """
         Upload a neuron morphology DataFrame as an SWC file.
 
@@ -193,9 +187,7 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
-    def download_file(
-        self, folder_path: str, file_name: str, output_path: str
-    ):
+    def download_file(self, folder_path: str, file_name: str, output_path: str):
         """
         Download a file from SharePoint to a local path using its folder and file name.
 
@@ -287,9 +279,7 @@ class SharePointClient:
                 )
 
             # Step 3: Check for conflict at destination
-            dest_check = requests.get(
-                self._build_url(dest_path), headers=headers
-            )
+            dest_check = requests.get(self._build_url(dest_path), headers=headers)
             if dest_check.status_code == 200:
                 raise Exception(
                     f"[SAFE_MOVE_FILE] Conflict: '{dest_file_name}' already exists at destination '{dest_folder}'.",
@@ -309,9 +299,7 @@ class SharePointClient:
                 "name": dest_file_name,
             }
 
-            move_response = requests.patch(
-                patch_url, headers=headers, json=payload
-            )
+            move_response = requests.patch(patch_url, headers=headers, json=payload)
             move_response.raise_for_status()
 
             logger.info(
@@ -320,18 +308,14 @@ class SharePointClient:
             return move_response.json()
 
         except Exception as e:
-            logger.error(
-                f"[SAFE_MOVE_FILE] Move failed for '{file_name}': {e}"
-            )
+            logger.error(f"[SAFE_MOVE_FILE] Move failed for '{file_name}': {e}")
 
             # Step 6: Attempt recovery only if file was downloaded
             if file_bytes:
                 try:
                     recovery_url = self._build_url(src_path + ":/content")
                     recovery_headers = token_manager.get_headers()
-                    recovery_headers["Content-Type"] = (
-                        "application/octet-stream"
-                    )
+                    recovery_headers["Content-Type"] = "application/octet-stream"
                     recovery_response = requests.put(
                         recovery_url, headers=recovery_headers, data=file_bytes
                     )
@@ -374,11 +358,7 @@ class SharePointClient:
         url = f"https://graph.microsoft.com/v1.0/sites/{self.site_id}/drives/{self.drive_id}/root/children"
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
-        return [
-            item["name"]
-            for item in response.json()["value"]
-            if "folder" in item
-        ]
+        return [item["name"] for item in response.json()["value"] if "folder" in item]
 
     def print_directory(
         self, folder_path: str, indent: int = 0, show_files: bool = False
@@ -408,9 +388,7 @@ class SharePointClient:
             if is_folder:
                 print(" " * indent + item["name"])
                 new_path = (
-                    f"{folder_path}/{item['name']}"
-                    if folder_path
-                    else item["name"]
+                    f"{folder_path}/{item['name']}" if folder_path else item["name"]
                 )
                 self.print_directory(new_path, indent + 4, show_files)
             elif show_files:
