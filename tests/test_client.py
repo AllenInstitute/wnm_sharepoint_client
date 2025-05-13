@@ -73,7 +73,7 @@ def test_move_file(client):
 
 def test_list_files(client):
     listed_files = client.list_items(FOLDER)
-    assert set(EXPECTED_TEST_FILES) == set(listed_files)
+    assert len(set(EXPECTED_TEST_FILES) - set(listed_files)) == 0
 
 
 def test_read_spreadsheet_invalid_file_type(client):

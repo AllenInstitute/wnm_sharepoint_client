@@ -40,7 +40,6 @@ class SharePointClient:
         :return: List of item names.
         """
         url = self._build_url(f"General/{folder_path}:/children")
-        print(url)
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
         return [d["name"] for d in response.json()["value"]]
