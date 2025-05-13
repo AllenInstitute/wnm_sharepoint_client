@@ -3,8 +3,13 @@ import time
 
 import requests
 
-from .config import CLIENT_ID, CLIENT_SECRET, SCOPE, TENANT_ID
+from .config import SITE_MANAGER
 from .logger import logger
+
+TENANT_ID = SITE_MANAGER["auth"]["TENANT_ID"]
+CLIENT_ID = SITE_MANAGER["auth"]["CLIENT_ID"]
+CLIENT_SECRET = SITE_MANAGER["auth"]["CLIENT_SECRET"]
+SCOPE = SITE_MANAGER["auth"]["SCOPE"]
 
 
 class SingletonMeta(type):
@@ -33,7 +38,9 @@ class TokenManager(metaclass=SingletonMeta):
 
     def refresh_token(self):
         logger.info("Refreshing token...")
-        token_url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+        token_url = (
+            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+        )
         data = {
             "grant_type": "client_credentials",
             "client_id": CLIENT_ID,

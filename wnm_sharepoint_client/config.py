@@ -1,46 +1,61 @@
+import json
 import os
-from dotenv import load_dotenv
-import warnings
+
+REQUIRED_AUTH_KEYS = {
+    "CLIENT_ID",
+    "TENANT_ID",
+    "CLIENT_SECRET",
+    "SCOPE",
+    "GRAPH_API_BASE_URL",
+    "TOP",
+}
+REQUIRED_SITE_KEYS = {"SITE_ID", "DRIVE_ID", "SITE_URL"}
+
 
 class ConfigError(Exception):
     """Custom exception for configuration errors."""
+
     pass
 
-# Optionally load .env file if DOTENV_PATH is specified
-dotenv_path = os.getenv("DOTENV_PATH")
-if dotenv_path:
-    if not os.path.isfile(dotenv_path):
-        raise ConfigError(f"DOTENV_PATH is set but file does not exist: {dotenv_path}")
-    
-    vars_loaded = load_dotenv(dotenv_path=dotenv_path)
-    if not vars_loaded:
-        raise ConfigError(f".env file at {dotenv_path} was found but no variables were loaded.")
+
+config_path = os.getenv("CONFIG_JSON_PATH")
+if config_path:
+    if not os.path.isfile(config_path):
+        raise ConfigError(
+            f"CONFIG_JSON_PATH is set but file does not exist: {config_path}"
+        )
+
+    with open(config_path, "r") as f:
+        SITE_MANAGER = json.load(f)
+
+    if len(SITE_MANAGER) == 0:
+        raise ConfigError(
+            f"config.json file at {config_path} was found but no variables were loaded."
+        )
+
+    if "auth" not in SITE_MANAGER:
+        raise ConfigError(
+            "Missing 'auth' data in config. Please see example_config.json"
+        )
+
+    if "sites" not in SITE_MANAGER:
+        raise ConfigError(
+            "Missing 'sites' section in config. Please see example_config.json"
+        )
+
+    missing_auth_keys = REQUIRED_AUTH_KEYS - set(SITE_MANAGER["auth"].keys())
+    if missing_auth_keys:
+        raise ConfigError(f"Missing auth keys: {', '.join(missing_auth_keys)}")
+
+    for site_key, site_data in SITE_MANAGER["sites"].items():
+        missing_site_keys = REQUIRED_SITE_KEYS - set(site_data.keys())
+        if missing_site_keys:
+            raise ConfigError(
+                f"Missing keys in site '{site_key}': {', '.join(missing_site_keys)}"
+            )
+
+
 else:
-    warning_msg = "DOTENV_PATH is not set. Will try to load variables directly from environment."
-    warnings.warn(warning_msg, UserWarning)
-    # Not an error - manual env setup is allowed
-    pass
-
-required_env_vars = [
-    "TENANT_ID",
-    "CLIENT_ID",
-    "CLIENT_SECRET",
-    "SITE_ID",
-    "DRIVE_ID",
-    "SCOPE"
-]
-
-missing_vars = [var for var in required_env_vars if os.getenv(var) is None]
-if missing_vars:
-    msg = "Missing required environment variables:\n" + "\n".join(missing_vars)
-    msg = msg
-    raise ConfigError(msg)
-
-# Load variables after validation
-TENANT_ID = os.getenv("TENANT_ID")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-SITE_ID = os.getenv("SITE_ID")
-DRIVE_ID = os.getenv("DRIVE_ID")
-SCOPE = os.getenv("SCOPE") 
-GRAPH_API_BASE_URL = "https://graph.microsoft.com/v1.0"
+    raise ConfigError(
+        f"CONFIG_JSON_PATH must be set as an environment variable"
+    )

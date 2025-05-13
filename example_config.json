@@ -1,0 +1,22 @@
+{
+    "auth": {
+      "CLIENT_ID": "your-client-id",
+      "TENANT_ID": "your-tenant-id",
+      "CLIENT_SECRET": "your-client-secret",
+      "SCOPE": "https://graph.microsoft.com/.default",
+      "GRAPH_API_BASE_URL": "https://graph.microsoft.com/v1.0",
+      "TOP": 5000
+    },
+    "sites": {
+      "YourSiteName": {
+        "SITE_ID": "some-sharepoint-site",
+        "DRIVE_ID": "some-drive-id",
+        "SITE_URL": "some-site-url"
+      },
+      "YourOtherSiteName": {
+        "SITE_ID": "some-other-sharepoint-site",
+        "DRIVE_ID": "some-other-drive-id-site",
+        "SITE_URL": "some-other-site-url"
+      }
+    }
+  }
