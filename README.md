@@ -131,11 +131,39 @@ client = SharePointClient("HORTA")
 
 ---
 
+### Find available root directories 
+
+```python
+client.list_top_level_folders()
+
+['General']
+
+```
+
+---
+
+### Recursively show file structure
+```python
+client.print_directory('General', indent=0, show_files=False)
+
+AIBS Completed SWC Files
+    dataset_exaSPIM_653159
+    dataset_exaSPIM_674185
+        complete
+    dataset_exaSPIM_686955
+        complete
+    dataset_exaSPIM_713601
+        complete
+        ...
+```
+
+---
+
 
 ### List files in a folder
 
 ```python
-items = client.list_items("AIBS Completed SWC Files/wnm_sharepoint_client_CICD")
+items = client.list_items("General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD")
 print(items)
 ```
 
@@ -144,7 +172,7 @@ print(items)
 ### Read a spreadsheet
 
 ```python
-df = client.read_spreadsheet("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "example.xlsx")
+df = client.read_spreadsheet("General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "example.xlsx")
 print(df.head())
 ```
 
@@ -153,7 +181,7 @@ print(df.head())
 ### Read a JSON file
 
 ```python
-data = client.read_json("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "settings.json")
+data = client.read_json("General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "settings.json")
 print(data)
 ```
 
@@ -162,7 +190,7 @@ print(data)
 ### Read an SWC file to a dataframe
 
 ```python
-df = client.read_swc("AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "cell_001.swc")
+df = client.read_swc("General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", "cell_001.swc")
 print(df.head())
 ```
 
@@ -199,8 +227,8 @@ client.upload_file("local/path/to/file.txt", folder="GeneralDocs")
 ### Move a file 
 
 ```python
-client.move_file(source_folder="AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
-file_name = "sourcefile.txt", dest_folder = "AIBS Completed SWC Files/wnm_sharepoint_client_CICD", new_file_name = "movedfile.txt")
+client.move_file(source_folder="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
+file_name = "sourcefile.txt", dest_folder = "General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", new_file_name = "movedfile.txt")
 ```
 
 ---
@@ -208,7 +236,7 @@ file_name = "sourcefile.txt", dest_folder = "AIBS Completed SWC Files/wnm_sharep
 ### Move a file 
 
 ```python
-client.create_folder(parent_path="AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
+client.create_folder(parent_path="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
 new_folder_name = "SomeSubFolder")
 ``````
 ---

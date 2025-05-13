@@ -343,7 +343,43 @@ class SharePointClient:
         logger.info(f"[DISCOVERY] Found {len(drives)} drives.")
         return drives
 
+    def list_top_level_folders(self):
+        """
+        List top-level folders in the SharePoint site's document library.
 
+        :return: List of top-level folder names.
+        """
+        url = f"https://graph.microsoft.com/v1.0/sites/{self.site_id}/drives/{self.drive_id}/root/children"
+        response = requests.get(url, headers=token_manager.get_headers())
+        response.raise_for_status()
+        return [item["name"] for item in response.json()["value"] if "folder" in item]
+    
+    def print_directory(self, folder_path: str, indent: int = 0, show_files: bool = False):
+        """
+        Recursively prints the folder (and optionally file) structure of a SharePoint directory.
+
+        :param folder_path: The relative path from the drive root
+        :param indent: Current indentation level (used in recursion)
+        :param show_files: Whether to include files in the output
+        """
+        try:
+            url = self._build_url("root" if folder_path.strip() in ("", "/") else f"{folder_path}:/children")
+            response = requests.get(url, headers=token_manager.get_headers())
+            response.raise_for_status()
+            items = response.json().get("value", [])
+        except Exception as e:
+            print(" " * indent + f"[ERROR] {folder_path} - {e}")
+            return
+
+        for item in items:
+            is_folder = item.get("folder")
+            if is_folder:
+                print(" " * indent + item["name"])
+                new_path = f"{folder_path}/{item['name']}" if folder_path else item["name"]
+                self.print_directory(new_path, indent + 4, show_files)
+            elif show_files:
+                print(" " * indent + item["name"])
+                
 def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
     """
     Returns a dynamic max safe size in bytes, based on a fraction of available memory.
