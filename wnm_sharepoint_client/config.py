@@ -56,4 +56,6 @@ if config_path:
 
 
 else:
-    raise ConfigError(f"CONFIG_JSON_PATH must be set as an environment variable")
+    raise ConfigError(
+        f"CONFIG_JSON_PATH must be set as an environment variable"
+    )

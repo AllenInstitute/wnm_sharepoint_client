@@ -38,7 +38,9 @@ class TokenManager(metaclass=SingletonMeta):
 
     def refresh_token(self):
         logger.info("Refreshing token...")
-        token_url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+        token_url = (
+            f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
+        )
         data = {
             "grant_type": "client_credentials",
             "client_id": CLIENT_ID,
