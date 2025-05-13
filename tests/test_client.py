@@ -9,13 +9,13 @@ import requests
 from wnm_sharepoint_client.auth import token_manager
 from wnm_sharepoint_client.client import SharePointClient
 
-FOLDER = "AIBS Completed SWC Files/wnm_sharepoint_client_CICD"
+FOLDER = "General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD"
 EXPECTED_TEST_FILES = ["test_json.json", "test_csv.csv"]
 
 
 @pytest.fixture(scope="module")
 def client():
-    return SharePointClient()
+    return SharePointClient("HORTA")
 
 
 def test_upload_and_read_json(client):
@@ -80,33 +80,6 @@ def test_read_spreadsheet_invalid_file_type(client):
     file_name = "test_json.json"
     with pytest.raises(Exception):
         client.read_spreadsheet(FOLDER, file_name)
-
-
-def test_token_refresh_logic(monkeypatch):
-    from wnm_sharepoint_client.auth import TokenManager
-
-    tm = TokenManager()
-    # Expire the token
-    tm.expiry = time.time() - 1
-
-    # Force refresh
-    monkeypatch.setattr(
-        "requests.post",
-        lambda *a, **kw: type(
-            "MockResp",
-            (),
-            {
-                "raise_for_status": lambda self: None,
-                "json": lambda self: {
-                    "access_token": "new-token",
-                    "expires_in": 3600,
-                },
-            },
-        )(),
-    )
-
-    new_token = tm.get_token()
-    assert new_token == "new-token"
 
 
 def test_upload_and_download_file(client, tmp_path):

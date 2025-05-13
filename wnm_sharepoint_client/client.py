@@ -8,18 +8,25 @@ import psutil
 import requests
 
 from .auth import token_manager
-from .config import DRIVE_ID, SITE_ID
+from .config import SITE_MANAGER 
 from .logger import logger
 
 
 class SharePointClient:
-    def __init__(self, site_id: str = SITE_ID, drive_id: str = DRIVE_ID):
+    def __init__(self, site_name: str): 
         """
         Initialize the SharePoint client with site and drive identifiers.
 
-        :param site_id: The unique identifier of the SharePoint site.
-        :param drive_id: The unique identifier of the SharePoint document library (drive).
+        :param site_name: The unique identifier for a SharePoint site. Should exist as a key in the 'sites' section of config.json file.
         """
+        # verify the site name and then load the site_id and drive_id
+        if site_name not in SITE_MANAGER['sites'].keys():
+            err_msg = f"Given site_name is not in known list of sites from .env file:\n{list(SITE_MANAGER.keys())}"
+            raise ValueError(err_msg)
+        else:
+            site_id = SITE_MANAGER['sites'][site_name]['SITE_ID']
+            drive_id = SITE_MANAGER['sites'][site_name]['DRIVE_ID']
+            
         self.site_id = site_id
         self.drive_id = drive_id
 
@@ -39,12 +46,12 @@ class SharePointClient:
         :param folder_path: Folder path relative to the drive root (e.g., "Documents/Reports").
         :return: List of item names.
         """
-        url = self._build_url(f"General/{folder_path}:/children")
+        url = self._build_url(f"{folder_path}:/children")
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
         return [d["name"] for d in response.json()["value"]]
 
-    def get_document(self, folder: str, file_name: str) -> dict:
+    def get_document(self, folder: str, file_name: str) -> dict:  
         """
         Retrieve metadata for a document in a specified folder.
 
@@ -52,7 +59,7 @@ class SharePointClient:
         :param file_name: The name of the file.
         :return: Metadata dictionary.
         """
-        url = self._build_url(f"General/{folder}/{file_name}")
+        url = self._build_url(f"{folder}/{file_name}")
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
         return response.json()
@@ -115,7 +122,7 @@ class SharePointClient:
         :param file_name: Name of the file to create (must end in .json).
         :return: Upload response metadata.
         """
-        url = self._build_url(f"General/{folder}/{file_name}:/content")
+        url = self._build_url(f"{folder}/{file_name}:/content")
         buffer = BytesIO(json.dumps(data, indent=4).encode("utf-8"))
         buffer.seek(0)
         headers = token_manager.get_headers()
@@ -133,7 +140,7 @@ class SharePointClient:
         :param file_name: File name (must end in .csv).
         :return: Upload response metadata.
         """
-        url = self._build_url(f"General/{folder}/{file_name}:/content")
+        url = self._build_url(f"{folder}/{file_name}:/content")
         buffer = StringIO()
         df.to_csv(buffer, index=False)
         buffer.seek(0)
@@ -152,7 +159,7 @@ class SharePointClient:
         :param file_name: File name (must end in .swc).
         :return: Upload response metadata.
         """
-        url = self._build_url(f"General/{folder}/{file_name}:/content")
+        url = self._build_url(f"{folder}/{file_name}:/content")
         buffer = StringIO()
         buffer.write("# " + " ".join(df.columns) + "\n")
         df.to_csv(buffer, sep=" ", header=False, index=False)
@@ -172,7 +179,7 @@ class SharePointClient:
         :return: Upload response metadata.
         """
         local_path = Path(local_path)
-        url = self._build_url(f"General/{folder}/{local_path.name}:/content")
+        url = self._build_url(f"{folder}/{local_path.name}:/content")
         headers = token_manager.get_headers()
         headers["Content-Type"] = "application/octet-stream"
         with open(local_path, "rb") as f:
@@ -184,14 +191,14 @@ class SharePointClient:
         """
         Download a file from SharePoint to a local path using its folder and file name.
 
-        :param folder_path: Folder path relative to 'General'.
+        :param folder_path: Folder path.
         :param file_name: File name to download.
         :param output_path: Path to save the downloaded file locally.
         """
         meta = self.get_document(folder_path, file_name)
         url = meta["@microsoft.graph.downloadUrl"]
 
-        response = requests.get(url, headers=token_manager.get_headers())
+        response = requests.get(url)  
         response.raise_for_status()
 
         with open(output_path, "wb") as f:
@@ -205,7 +212,7 @@ class SharePointClient:
         :param new_folder_name: Name of the folder to create.
         :return: Response metadata from SharePoint.
         """
-        url = self._build_url(f"General/{parent_path}:/children")
+        url = self._build_url(f"{parent_path}:/children")
         headers = token_manager.get_headers()
         headers["Content-Type"] = "application/json"
 
@@ -232,9 +239,9 @@ class SharePointClient:
         - Moves the file via Graph API.
         - If move fails, restores original file from memory.
 
-        :param source_folder: Current folder path relative to 'General'.
+        :param source_folder: Current folder path .
         :param file_name: Name of the file to move.
-        :param dest_folder: Destination folder path relative to 'General'.
+        :param dest_folder: Destination folder path .
         :param new_file_name: Optional new name for the file at the destination.
         :return: Metadata of the moved file.
         """
@@ -244,8 +251,8 @@ class SharePointClient:
         dest_file_name = new_file_name or file_name
 
         # Build paths
-        src_path = f"General/{source_folder}/{file_name}"
-        dest_path = f"General/{dest_folder}/{dest_file_name}"
+        src_path = f"{source_folder}/{file_name}"
+        dest_path = f"{dest_folder}/{dest_file_name}"
 
         file_bytes = None  # safeguard in case download fails
 
@@ -279,7 +286,7 @@ class SharePointClient:
                 )
 
             # Step 4: Get destination folder's item ID
-            dest_folder_meta = requests.get(self._build_url(f"General/{dest_folder}"), headers=headers)
+            dest_folder_meta = requests.get(self._build_url(f"{dest_folder}"), headers=headers)
             dest_folder_meta.raise_for_status()
             parent_id = dest_folder_meta.json()["id"]
 

@@ -27,58 +27,98 @@ pip install .
 ---
 ## Setup Instructions
 
-Before running the application, you need to set up your environment variables. There are two ways to do this:
-
-### Option 1: Use an `.env` file (Recommended)
-
-1. Copy the `.env.example` file found in this repo to `.env` somewhere accessible to your machine. (e.g. `/my/custom/file/.env`)
-2. Open the `.env` file and replace the placeholders with your actual values:
-   ```dotenv
-   TENANT_ID=your-tenant-id
-   CLIENT_ID=your-client-id
-   CLIENT_SECRET=your-client-secret
-   SITE_ID=your-site-id
-   DRIVE_ID=your-drive-id
-   SCOPE=https://graph.microsoft.com/.default
-   ```
-3. Specify the path to that file using the `DOTENV_PATH` environment variable.
-
-```bash
-export DOTENV_PATH="/my/custom/file/.env"
-```
-
-Now, when you run the application the `dotenv` package will load the configuration from the specified `.env` file.
-
-
-### Option 2: Set Environment Variables Manually
-
-You can also set the environment variables manually in your terminal before running the application.
-
-For **Linux/macOS**, you can use:
-
-```bash
-export TENANT_ID=your-tenant-id
-export CLIENT_ID=your-client-id
-export CLIENT_SECRET=your-client-secret
-export SITE_ID=your-site-id
-export DRIVE_ID=your-drive-id
-export SCOPE=https://graph.microsoft.com/.default
-```
-
-For **Windows (PowerShell)**, use:
-
-```powershell
-$env:TENANT_ID = "your-tenant-id"
-$env:CLIENT_ID = "your-client-id"
-$env:CLIENT_SECRET = "your-client-secret"
-$env:SITE_ID = "your-site-id"
-$env:DRIVE_ID = "your-drive-id"
-$env:SCOPE = "https://graph.microsoft.com/.default"
-```
-
-Once the environment variables are set, you can run the application.
+Before running the application, you need to set up your environment by creating a `config.json` file and setting its path using the `CONFIG_JSON_PATH` environment variable.
 
 ---
+
+### Step 1: Create a `config.json`
+
+This file holds Microsoft authentication credentials and SharePoint site metadata.
+
+#### Example `config.json`:
+
+```json
+{
+  "auth": {
+    "CLIENT_ID": "your-client-id",
+    "TENANT_ID": "your-tenant-id",
+    "CLIENT_SECRET": "your-client-secret",
+    "SCOPE": "https://graph.microsoft.com/.default",
+    "GRAPH_API_BASE_URL": "https://graph.microsoft.com/v1.0",
+    "TOP": 5000
+  },
+  "sites": {
+    "NEUROANATOMY": {
+      "SITE_ID": "some-sharepoint-site",
+      "DRIVE_ID": "some-drive-id",
+      "SITE_URL": "some-site-url"
+    },
+    "HORTA": {
+      "SITE_ID": "some-other-sharepoint-site",
+      "DRIVE_ID": "some-other-drive-id-site",
+      "SITE_URL": "some-other-site-url"
+    }
+  }
+}
+```
+
+---
+
+### Step 2: Set the config path using an environment variable
+
+Export the path to your `config.json` file before running the application:
+
+#### Linux/macOS:
+```bash
+export CONFIG_JSON_PATH="/full/path/to/your/config.json"
+```
+
+#### Windows (PowerShell):
+```powershell
+$env:CONFIG_JSON_PATH = "C:\full\path\to\your\config.json"
+```
+
+---
+
+## About `config.json`
+
+The `config.json` file is a site-specific configuration that defines both:
+
+### 1. Microsoft Graph Authentication
+
+Located under the top-level `"auth"` key:
+
+| Key                 | Description                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `CLIENT_ID`          | Azure AD application (client) ID                                            |
+| `TENANT_ID`          | Azure AD tenant ID                                                          |
+| `CLIENT_SECRET`      | Secret string generated for your app registration                           |
+| `SCOPE`              | Graph API scope (usually `https://graph.microsoft.com/.default`)            |
+| `GRAPH_API_BASE_URL` | Microsoft Graph API base URL (`https://graph.microsoft.com/v1.0`)           |
+| `TOP`                | Optional limit for pagination of Graph results                              |
+
+These follow Microsoft's OAuth2 and Graph API conventions.
+
+---
+
+### 2. SharePoint Site Definitions
+
+Located under the `"sites"` key. Each site is a dictionary with these keys:
+
+| Key         | Description                                                                    |
+|--------------|--------------------------------------------------------------------------------|
+| `SITE_ID`     | SharePoint site ID in Microsoft format (`hostname,groupId,siteId`)           |
+| `DRIVE_ID`    | Unique ID of the SharePoint document library (drive)                         |
+| `SITE_URL`    | Human-readable SharePoint site URL                                           |
+
+These values are required for Microsoft Graph to resolve and access SharePoint site contents.
+
+---
+
+If the config file is missing any required values, the application will raise an error during initialization.
+
+---
+
 ## Examples
 
 ### Initialize the Client
@@ -86,7 +126,7 @@ Once the environment variables are set, you can run the application.
 ```python
 from wnm_sharepoint_client.client import SharePointClient
 
-client = SharePointClient()
+client = SharePointClient("HORTA")
 ```
 
 ---
@@ -175,7 +215,6 @@ new_folder_name = "SomeSubFolder")
 
 ##  Notes
 
-- All paths in SharePoint are relative to the `General` folder by default.
 - All authentication is handled via `TokenManager` in `auth.py`. No need to manually refresh tokens.
 
 
@@ -184,12 +223,5 @@ new_folder_name = "SomeSubFolder")
 - A registered Azure AD App with permissions for Microsoft Graph API:
   - `Files.ReadWrite.All`
   - `Sites.Read.All`
-- The `site_id` and `drive_id` can be retrieved using the Graph Explorer or `GET /sites` and `/drives` endpoints.
-
----
-
-##  Coming Soon
-
-- Optional caching layer for metadata  
 
 ---
