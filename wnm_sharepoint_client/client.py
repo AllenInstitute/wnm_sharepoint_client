@@ -8,25 +8,25 @@ import psutil
 import requests
 
 from .auth import token_manager
-from .config import SITE_MANAGER 
+from .config import SITE_MANAGER
 from .logger import logger
 
 
 class SharePointClient:
-    def __init__(self, site_name: str): 
+    def __init__(self, site_name: str):
         """
         Initialize the SharePoint client with site and drive identifiers.
 
         :param site_name: The unique identifier for a SharePoint site. Should exist as a key in the 'sites' section of config.json file.
         """
         # verify the site name and then load the site_id and drive_id
-        if site_name not in SITE_MANAGER['sites'].keys():
+        if site_name not in SITE_MANAGER["sites"].keys():
             err_msg = f"Given site_name is not in known list of sites from .env file:\n{list(SITE_MANAGER.keys())}"
             raise ValueError(err_msg)
         else:
-            site_id = SITE_MANAGER['sites'][site_name]['SITE_ID']
-            drive_id = SITE_MANAGER['sites'][site_name]['DRIVE_ID']
-            
+            site_id = SITE_MANAGER["sites"][site_name]["SITE_ID"]
+            drive_id = SITE_MANAGER["sites"][site_name]["DRIVE_ID"]
+
         self.site_id = site_id
         self.drive_id = drive_id
 
@@ -51,7 +51,7 @@ class SharePointClient:
         response.raise_for_status()
         return [d["name"] for d in response.json()["value"]]
 
-    def get_document(self, folder: str, file_name: str) -> dict:  
+    def get_document(self, folder: str, file_name: str) -> dict:
         """
         Retrieve metadata for a document in a specified folder.
 
@@ -198,7 +198,7 @@ class SharePointClient:
         meta = self.get_document(folder_path, file_name)
         url = meta["@microsoft.graph.downloadUrl"]
 
-        response = requests.get(url)  
+        response = requests.get(url)
         response.raise_for_status()
 
         with open(output_path, "wb") as f:
@@ -286,7 +286,9 @@ class SharePointClient:
                 )
 
             # Step 4: Get destination folder's item ID
-            dest_folder_meta = requests.get(self._build_url(f"{dest_folder}"), headers=headers)
+            dest_folder_meta = requests.get(
+                self._build_url(f"{dest_folder}"), headers=headers
+            )
             dest_folder_meta.raise_for_status()
             parent_id = dest_folder_meta.json()["id"]
 
@@ -314,7 +316,9 @@ class SharePointClient:
                     recovery_url = self._build_url(src_path + ":/content")
                     recovery_headers = token_manager.get_headers()
                     recovery_headers["Content-Type"] = "application/octet-stream"
-                    recovery_response = requests.put(recovery_url, headers=recovery_headers, data=file_bytes)
+                    recovery_response = requests.put(
+                        recovery_url, headers=recovery_headers, data=file_bytes
+                    )
                     recovery_response.raise_for_status()
 
                     logger.warning(
@@ -326,7 +330,9 @@ class SharePointClient:
                     )
                     raise
             else:
-                logger.warning("[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore.")
+                logger.warning(
+                    "[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore."
+                )
 
             raise
 
@@ -353,8 +359,10 @@ class SharePointClient:
         response = requests.get(url, headers=token_manager.get_headers())
         response.raise_for_status()
         return [item["name"] for item in response.json()["value"] if "folder" in item]
-    
-    def print_directory(self, folder_path: str, indent: int = 0, show_files: bool = False):
+
+    def print_directory(
+        self, folder_path: str, indent: int = 0, show_files: bool = False
+    ):
         """
         Recursively prints the folder (and optionally file) structure of a SharePoint directory.
 
@@ -363,7 +371,11 @@ class SharePointClient:
         :param show_files: Whether to include files in the output
         """
         try:
-            url = self._build_url("root" if folder_path.strip() in ("", "/") else f"{folder_path}:/children")
+            url = self._build_url(
+                "root"
+                if folder_path.strip() in ("", "/")
+                else f"{folder_path}:/children"
+            )
             response = requests.get(url, headers=token_manager.get_headers())
             response.raise_for_status()
             items = response.json().get("value", [])
@@ -375,11 +387,14 @@ class SharePointClient:
             is_folder = item.get("folder")
             if is_folder:
                 print(" " * indent + item["name"])
-                new_path = f"{folder_path}/{item['name']}" if folder_path else item["name"]
+                new_path = (
+                    f"{folder_path}/{item['name']}" if folder_path else item["name"]
+                )
                 self.print_directory(new_path, indent + 4, show_files)
             elif show_files:
                 print(" " * indent + item["name"])
-                
+
+
 def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
     """
     Returns a dynamic max safe size in bytes, based on a fraction of available memory.

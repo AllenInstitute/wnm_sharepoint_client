@@ -3,13 +3,14 @@ import time
 
 import requests
 
-from .config import SITE_MANAGER 
+from .config import SITE_MANAGER
 from .logger import logger
 
-TENANT_ID =  SITE_MANAGER['auth']['TENANT_ID']
-CLIENT_ID = SITE_MANAGER['auth']['CLIENT_ID']
-CLIENT_SECRET = SITE_MANAGER['auth']['CLIENT_SECRET']
-SCOPE = SITE_MANAGER['auth']['SCOPE']
+TENANT_ID = SITE_MANAGER["auth"]["TENANT_ID"]
+CLIENT_ID = SITE_MANAGER["auth"]["CLIENT_ID"]
+CLIENT_SECRET = SITE_MANAGER["auth"]["CLIENT_SECRET"]
+SCOPE = SITE_MANAGER["auth"]["SCOPE"]
+
 
 class SingletonMeta(type):
     _instances = {}

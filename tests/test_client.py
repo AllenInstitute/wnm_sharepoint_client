@@ -1,5 +1,4 @@
 import os
-import time
 from datetime import datetime
 
 import pandas as pd
@@ -96,8 +95,12 @@ def test_upload_and_download_file(client, tmp_path):
     os.remove(downloaded_path)
     pd.testing.assert_frame_equal(downloaded_df, local_df)
 
+
 def test_list(client):
     assert "General" in client.list_top_level_folders()
 
+
 def test_print(client):
-    client.print_directory('General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD')
+    client.print_directory(
+        "General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD"
+    )

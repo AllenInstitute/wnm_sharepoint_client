@@ -2,12 +2,14 @@ import time
 
 import pytest
 
-from wnm_sharepoint_client.client import SharePointClient
 from wnm_sharepoint_client.auth import TokenManager
+from wnm_sharepoint_client.client import SharePointClient
+
 
 @pytest.fixture(scope="module")
 def client():
     return SharePointClient("HORTA")
+
 
 def test_token_refresh_logic(monkeypatch):
     "This test should be the last test run or put in a separate test file"
