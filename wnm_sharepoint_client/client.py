@@ -401,3 +401,6 @@ def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
     """
     available_bytes = psutil.virtual_memory().available
     return int(available_bytes * fraction)
+
+def list_available_sites():
+    return list(SITE_MANAGER["sites"].keys())

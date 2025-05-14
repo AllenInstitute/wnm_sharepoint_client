@@ -121,6 +121,17 @@ If the config file is missing any required values, the application will raise an
 
 ## Examples
 
+### View accessible sites
+##### (these will be the keys under 'sites' in config.json)
+```python
+from wnm_sharepoint_client import list_available_sites
+
+list_available_sites()
+
+['NEUROANATOMY', 'HORTA']
+```
+---
+
 ### Initialize the Client
 
 ```python
