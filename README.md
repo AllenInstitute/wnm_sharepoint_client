@@ -1,6 +1,6 @@
 # wnm_sharepoint_client
 
-A simple Python client for interacting with the Horta Microsoft SharePoint via the Microsoft Graph API. Supports downloading, uploading, and reading various file formats including CSV, Excel, JSON, and SWC.
+A simple Python client for interacting with Microsoft SharePoint sites via the Microsoft Graph API. Supports downloading, uploading, and reading various file formats including CSV, Excel, JSON, and SWC.
 
 ---
 
