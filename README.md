@@ -75,7 +75,7 @@ export CONFIG_JSON_PATH="/full/path/to/your/config.json"
 
 #### Windows (PowerShell):
 ```powershell
-$env:CONFIG_JSON_PATH = "C:\full\path\to\your\config.json"
+[Environment]::SetEnvironmentVariable("CONFIG_JSON_PATH", "C:\full\path\to\your\config.json", "User")
 ```
 
 ---
@@ -202,7 +202,7 @@ print(df.head())
 import pandas as pd
 
 df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-client.upload_csv(df, folder="Uploads", file_name="data.csv")
+client.upload_csv(df, folder="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", file_name="data.csv")
 ```
 
 ---
@@ -211,7 +211,7 @@ client.upload_csv(df, folder="Uploads", file_name="data.csv")
 
 ```python
 data = {"name": "example", "version": 1}
-client.upload_json(data, folder="Configs", file_name="example.json")
+client.upload_json(data, folder="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD", file_name="example.json")
 ```
 
 ---
@@ -219,7 +219,7 @@ client.upload_json(data, folder="Configs", file_name="example.json")
 ### Upload a local file
 
 ```python
-client.upload_file("local/path/to/file.txt", folder="GeneralDocs")
+client.upload_file("local/path/to/file.txt", folder="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD")
 ```
 
 ---
@@ -233,7 +233,7 @@ file_name = "sourcefile.txt", dest_folder = "General/AIBS Completed SWC Files/wn
 
 ---
 
-### Move a file 
+### Create a folder 
 
 ```python
 client.create_folder(parent_path="General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD",
