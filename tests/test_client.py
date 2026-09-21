@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 import requests
@@ -70,6 +71,19 @@ def test_move_file(client):
     result = client.move_file(FOLDER, moved_file_name, FOLDER, file_name)
 
 
+def test_upload_figure(client):
+    fig, ax = plt.subplots()
+    ax.plot([0, 1, 2], [0, 1, 4])
+    file_name = "test_figure.png"
+
+    result = client.upload_figure(fig, FOLDER, file_name, dpi=72, bbox_inches="tight")
+    plt.close(fig)
+
+    assert result["name"] == file_name
+    listed = client.list_items(FOLDER)
+    assert file_name in listed
+
+
 def test_list_files(client):
     listed_files = client.list_items(FOLDER)
     assert len(set(EXPECTED_TEST_FILES) - set(listed_files)) == 0
@@ -101,6 +115,4 @@ def test_list(client):
 
 
 def test_print(client):
-    client.print_directory(
-        "General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD"
-    )
+    client.print_directory("General/AIBS Completed SWC Files/wnm_sharepoint_client_CICD")

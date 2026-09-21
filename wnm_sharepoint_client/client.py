@@ -186,6 +186,35 @@ class SharePointClient:
         response.raise_for_status()
         return response.json()
 
+    def upload_figure(self, fig, folder: str, file_name: str, fmt: str = None, **savefig_kwargs) -> dict:
+        """
+        Upload a matplotlib Figure to SharePoint.
+
+        :param fig: matplotlib.figure.Figure object.
+        :param folder: Target folder on SharePoint.
+        :param file_name: File name (e.g., "plot.png", "chart.pdf", "figure.svg").
+        :param fmt: Format override ("png", "pdf", "svg"). Inferred from file_name extension if omitted.
+        :param savefig_kwargs: Additional keyword arguments passed to fig.savefig() (e.g., dpi=150, bbox_inches="tight").
+        :return: Upload response metadata.
+        """
+        _content_types = {
+            "png": "image/png",
+            "pdf": "application/pdf",
+            "svg": "image/svg+xml",
+        }
+        if fmt is None:
+            fmt = Path(file_name).suffix.lstrip(".").lower()
+        content_type = _content_types.get(fmt, "application/octet-stream")
+        url = self._build_url(f"{folder}/{file_name}:/content")
+        buffer = BytesIO()
+        fig.savefig(buffer, format=fmt, **savefig_kwargs)
+        buffer.seek(0)
+        headers = token_manager.get_headers()
+        headers["Content-Type"] = content_type
+        response = requests.put(url, headers=headers, data=buffer)
+        response.raise_for_status()
+        return response.json()
+
     def upload_file(self, local_path: str, folder: str) -> dict:
         """
         Upload a local file to SharePoint.
