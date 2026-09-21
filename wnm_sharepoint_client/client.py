@@ -21,7 +21,8 @@ class SharePointClient:
         """
         # verify the site name and then load the site_id and drive_id
         if site_name not in SITE_MANAGER["sites"].keys():
-            err_msg = f"Given site_name is not in known list of sites from .env file:\n{list(SITE_MANAGER.keys())}"
+            possible_sites = list(SITE_MANAGER["sites"].keys())
+            err_msg = f"Given site_name is not in known list of sites from .env file:\n{possible_sites}"
             raise ValueError(err_msg)
         else:
             site_id = SITE_MANAGER["sites"][site_name]["SITE_ID"]
@@ -41,15 +42,30 @@ class SharePointClient:
 
     def list_items(self, folder_path: str):
         """
-        List file and folder names within a given folder.
+        List file and folder names within a given folder, handling pagination
+        to retrieve all items.
 
         :param folder_path: Folder path relative to the drive root (e.g., "Documents/Reports").
         :return: List of item names.
         """
         url = self._build_url(f"{folder_path}:/children")
-        response = requests.get(url, headers=token_manager.get_headers())
-        response.raise_for_status()
-        return [d["name"] for d in response.json()["value"]]
+        all_item_names = []
+
+        # Loop until the nextLink is no longer present
+        while url:
+            response = requests.get(url, headers=token_manager.get_headers())
+            response.raise_for_status()
+            data = response.json()
+
+            # 1. Extract the names from the current page of results
+            all_item_names.extend([d["name"] for d in data.get("value", [])])
+
+            # 2. Check for the next link to continue pagination
+            # The Graph API uses "@odata.nextLink" for the URL of the next batch.
+            url = data.get("@odata.nextLink")
+
+        # Return the full list of all 320 items
+        return all_item_names
 
     def get_document(self, folder: str, file_name: str) -> dict:
         """
@@ -286,9 +302,7 @@ class SharePointClient:
                 )
 
             # Step 4: Get destination folder's item ID
-            dest_folder_meta = requests.get(
-                self._build_url(f"{dest_folder}"), headers=headers
-            )
+            dest_folder_meta = requests.get(self._build_url(f"{dest_folder}"), headers=headers)
             dest_folder_meta.raise_for_status()
             parent_id = dest_folder_meta.json()["id"]
 
@@ -316,9 +330,7 @@ class SharePointClient:
                     recovery_url = self._build_url(src_path + ":/content")
                     recovery_headers = token_manager.get_headers()
                     recovery_headers["Content-Type"] = "application/octet-stream"
-                    recovery_response = requests.put(
-                        recovery_url, headers=recovery_headers, data=file_bytes
-                    )
+                    recovery_response = requests.put(recovery_url, headers=recovery_headers, data=file_bytes)
                     recovery_response.raise_for_status()
 
                     logger.warning(
@@ -330,9 +342,7 @@ class SharePointClient:
                     )
                     raise
             else:
-                logger.warning(
-                    "[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore."
-                )
+                logger.warning("[SAFE_MOVE_FILE] Skipped recovery: No file_bytes to restore.")
 
             raise
 
@@ -360,9 +370,7 @@ class SharePointClient:
         response.raise_for_status()
         return [item["name"] for item in response.json()["value"] if "folder" in item]
 
-    def print_directory(
-        self, folder_path: str, indent: int = 0, show_files: bool = False
-    ):
+    def print_directory(self, folder_path: str, indent: int = 0, show_files: bool = False):
         """
         Recursively prints the folder (and optionally file) structure of a SharePoint directory.
 
@@ -371,11 +379,7 @@ class SharePointClient:
         :param show_files: Whether to include files in the output
         """
         try:
-            url = self._build_url(
-                "root"
-                if folder_path.strip() in ("", "/")
-                else f"{folder_path}:/children"
-            )
+            url = self._build_url("root" if folder_path.strip() in ("", "/") else f"{folder_path}:/children")
             response = requests.get(url, headers=token_manager.get_headers())
             response.raise_for_status()
             items = response.json().get("value", [])
@@ -387,9 +391,7 @@ class SharePointClient:
             is_folder = item.get("folder")
             if is_folder:
                 print(" " * indent + item["name"])
-                new_path = (
-                    f"{folder_path}/{item['name']}" if folder_path else item["name"]
-                )
+                new_path = f"{folder_path}/{item['name']}" if folder_path else item["name"]
                 self.print_directory(new_path, indent + 4, show_files)
             elif show_files:
                 print(" " * indent + item["name"])
@@ -401,6 +403,7 @@ def get_dynamic_max_safe_size(fraction: float = 0.2) -> int:
     """
     available_bytes = psutil.virtual_memory().available
     return int(available_bytes * fraction)
+
 
 def list_available_sites():
     return list(SITE_MANAGER["sites"].keys())
